@@ -45,7 +45,7 @@ with SapGui(sid='PRD',user='USR',pwd='AnPassword',mandante='900',language='PT') 
 ```
 
 ### The sky is the limit (or in this case, SAP Script)
-You can do what do you want to do with SAP session generated.
+You can do whatever you want with SAP session generated.
 If the methods of this package don't do what you need, you can build for your own using SAP Script docs.
 ```python
 with SapGui(sid='PRD',user='USR',pwd='AnPassword',mandante='900',language='PT') as sap:
@@ -54,7 +54,7 @@ with SapGui(sid='PRD',user='USR',pwd='AnPassword',mandante='900',language='PT') 
 	status_bar_text = sap.session.findById("wnd[0]/sbar/pane[0]").text
 ```
 ### How it works
-This package abstracts and padronize the most utilized methods of SAP Script. So, you can worry only about   your business rules.
+This package abstracts and padronize the most utilized methods of SAP Script. So, you can worry only about your business rules.
 ### How to Contribute
 If you find some other functionality that is util or relevant to implement in this package, feel free to contribute.
 We welcome contributions from the community and are pleased to have you join us.
