@@ -11,6 +11,7 @@ Sappy is designed to manipulate SAP GUI with some lines of code. It can be used 
 ## SAP Configuration
 Before use this package, you must configure your SAP to accept scripts without notify.
 Go to SAP configuration -> Accessbility and Scripting -> Scripting -> Uncheck the option "Notify when a script attaches to SAP GUI".
+
 ![SAP GUI Config](https://i.sstatic.net/lATNJ.jpg)
 
 Save and you can go ahead to use this package.
