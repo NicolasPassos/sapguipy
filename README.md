@@ -1,5 +1,5 @@
 
-# sappy
+# sapguipy
 
 Sappy is designed to manipulate SAP GUI with some lines of code. It can be used to facilitate complexes RPA developments, realize tests or even to execute simple macros on SAP GUI.
 
