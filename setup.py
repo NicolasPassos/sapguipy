@@ -17,7 +17,7 @@ setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     author_email="nicolasduart21@gmail.com",
-    packages=["sappy"],
+    packages=["sapguipy"],
     keywords="sap",
     python_requires='>=3.8',
     install_requires=requirements_list,
