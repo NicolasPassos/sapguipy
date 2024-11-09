@@ -9,7 +9,7 @@ requirements_list = [requirement.strip() for requirement in requirement]
 
 
 setup(
-    name="sappy",
+    name="sapguipy",
     version="0.0.1",
     author="Nicolas Passos",
     license="MIT License",
