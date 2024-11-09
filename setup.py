@@ -1,7 +1,12 @@
 from setuptools import setup
 
-with open("README.md", "r") as fh:
-    long_description = fh.read()
+with open("README.md", "r") as arq:
+    long_description = arq.read()
+
+with open("requirements.txt", "r", encoding="utf-8") as arq:
+    requirement = arq.readlines()
+requirements_list = [requirement.strip() for requirement in requirement]
+
 
 setup(
     name="sappy",
@@ -15,5 +20,5 @@ setup(
     packages=["sappy"],
     keywords="sap",
     python_requires='>=3.8',
-    install_requires=[]
+    install_requires=requirements_list,
 )
