@@ -23,11 +23,11 @@ To install this package, ensure you have Python installed.
 ### install with pip:
 
 ```bash
-pip install sappy
+pip install sapguipy
 ```
 ### Import it
 ```python
-from sappy import SapGui
+from sapguipy import SapGui
 ```
 
 ### Run it
