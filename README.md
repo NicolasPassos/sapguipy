@@ -5,7 +5,7 @@ Sapguipy is designed to manipulate SAP GUI with some lines of code. It can be us
 
 ### Key Features
 
-1. **SAP Integration:** Uses SAP Script, that was especifully builded for manipulate the SAP GUI. If you never heard about, see de docs of [SAP Script](https://help.sap.com/docs/sap_gui_for_windows/b47d018c3b9b45e897faf66a6c0885a8/babdf65f4d0a4bd8b40f5ff132cb12fa.html).
+1. **SAP Integration:** Uses SAP Script, that was especifully builded for manipulate the SAP GUI. If you never heard about, see the docs of [SAP Script](https://help.sap.com/docs/sap_gui_for_windows/b47d018c3b9b45e897faf66a6c0885a8/babdf65f4d0a4bd8b40f5ff132cb12fa.html).
 2. **Flexible Configuration:** Configure to suit your needs.
 
 ## SAP Configuration
