@@ -1,16 +1,19 @@
 from setuptools import setup
+from os import path
+
+here = path.abspath(path.dirname(__file__))
 
 with open("README.md", "r") as arq:
     long_description = arq.read()
 
-with open("requirements.txt", "r", encoding="utf-8") as arq:
+with open(path.join(here, "requirements.txt"), "r", encoding="utf-8") as arq:
     requirement = arq.readlines()
 requirements_list = [requirement.strip() for requirement in requirement]
 
 
 setup(
     name="sapguipy",
-    version="0.0.4",
+    version="0.0.5",
     author="Nicolas Passos",
     license="MIT License",
     description="Manipulate SAP GUI with some lines of code",
