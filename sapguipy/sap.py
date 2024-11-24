@@ -29,7 +29,8 @@ class SapGui:
         self.root_sap_dir = Path(root_sap_dir)
         self.new_pwd = None
         self.logged = False
-        self.info: GuiSessionInfo = self.session.Info
+        self.session_info = None
+        self.statusbar = None
 
     def __enter__(self):
         self.start_sap()
@@ -78,36 +79,37 @@ class SapGui:
 
             sleep(2)
             self.connection = self.application.Children(0)
-            self.session: GuiSession = self.connection.Children(0)
+            self.session = self.connection.Children(0)
+            self.session_info = GuiSessionInfo(self.session.Info)
+            self.statusbar = GuiStatusbar(self.find_by_id("wnd[0]/sbar"))
 
             # Se aparecer a janela de x tentativas com a senha incorreta
             if self.find_by_id("wnd[1]/usr/txtMESSTXT1"):
                 self.press_button("wnd[1]/tbar[0]/btn[0]")
 
             if self.get_user_logged() is None:
-                if self.get_status_text() == 'O nome ou a senha não está correto (repetir o logon)':
+                if self.statusbar.get_text() == 'O nome ou a senha não está correto (repetir o logon)':
                     raise ValueError('Failed to login with the provided credentials.')
                 
-                if self.find_by_id("wnd[1]/usr/radMULTI_LOGON_OPT1"):
+                if self.find_by_id("wnd[1]/usr/radMULTI_LOGON_OPT1", False):
                     self.find_by_id("wnd[1]/usr/radMULTI_LOGON_OPT1").select()
-                    self.press_button("wnd[1]/tbar[0]/btn[0]")
+                    self.find_by_id("wnd[1]/tbar[0]/btn[0]").press()
             
-            if self.find_by_id("wnd[1]/usr/lblRSYST-NCODE_TEXT"):
+            if self.find_by_id("wnd[1]/usr/lblRSYST-NCODE_TEXT", False):
                 # Se aparecer a tela de troca de senha, resetar a senha
                 _current_date = datetime.now()
                 _random = randint(0,100)
                 _date = _current_date + timedelta(days=_random)
                 self.new_pwd = _date.strftime("%B@%Y%H%M%f")
 
-                self.set_text("wnd[1]/usr/pwdRSYST-NCODE", self.new_pwd)
-                self.set_text("wnd[1]/usr/pwdRSYST-NCOD2", self.new_pwd)
-                self.press_button("wnd[1]/tbar[0]/btn[0]")
+                self.find_by_id("wnd[1]/usr/pwdRSYST-NCODE").set_text(self.new_pwd)
+                self.find_by_id("wnd[1]/usr/pwdRSYST-NCOD2").set_text(self.new_pwd)
+                self.find_by_id("wnd[1]/tbar[0]/btn[0]").press()
 
                 if self.find_by_id("wnd[1]/usr/txtMESSTXT1"):
-                    self.press_button("wnd[1]/tbar[0]/btn[0]")
+                    self.find_by_id("wnd[1]/tbar[0]/btn[0]").press()
 
             self.logged = True
-            self.maximize_window()
         else:
             raise Exception('This library only supports Windows OS')
         
@@ -116,9 +118,13 @@ class SapGui:
         """
         Returns the user currently logged in.
         """
-        return None if self.session.Info.User == '' else self.session.Info.User
+        user = self.session_info.get_user()
+        return None if user == '' else user
     
     def login(self):
+        """
+        Logins into the SAP application using the provided credentials.
+        """
         self.find_by_id("wnd[0]").maximize()
         self.find_by_id("wnd[0]/usr/txtRSYST-BNAME").set_text(self.user)
         self.find_by_id("wnd[0]/usr/pwdRSYST-BCODE").set_text(self.__pwd)
@@ -132,12 +138,18 @@ class SapGui:
             self.find_by_id("wnd[1]/tbar[0]/btn[0]").press()
 
     def logoff(self):
+        """
+        Logs out of the SAP application.
+        """
         self.find_by_id("wnd[0]").maximize()
         self.find_by_id("wnd[0]/tbar[0]/okcd").set_text("/nend")
         self.find_by_id("wnd[0]").sendVKey(0)
         self.find_by_id("wnd[1]/usr/btnSPOP-OPTION1").press()
 
     def quit(self):
+        """
+        Forces the SAP application to quit.
+        """
         self.program.terminate()
 
         for proc in psutil.process_iter(['pid', 'name']):
@@ -216,7 +228,7 @@ class GuiButton:
         self.element = element
     
     def press(self):
-        """Pressiona o botão."""
+        """Presses the button."""
         self.element.Press()
 
 class GuiTextField:
@@ -224,11 +236,11 @@ class GuiTextField:
         self.element = element
     
     def set_text(self, text):
-        """Define um valor de texto no campo."""
+        """Sets the text of the text field."""
         self.element.Text = text
     
     def get_text(self):
-        """Obtém o valor de texto do campo."""
+        """Returns the text of the text field."""
         return self.element.Text
 
 class GuiComboBox:
@@ -236,7 +248,7 @@ class GuiComboBox:
         self.element = element
     
     def select_entry(self, entry):
-        """Seleciona uma entrada no ComboBox."""
+        """Selects an entry in the combo box."""
         self.element.Key = entry
 
 class GuiCheckBox:
@@ -244,7 +256,7 @@ class GuiCheckBox:
         self.element = element
     
     def select(self, value=True):
-        """Marca ou desmarca a caixa de seleção."""
+        """Sets the value of the CheckBox."""
         self.element.Selected = value
 
 class GuiCTextField:
@@ -252,11 +264,11 @@ class GuiCTextField:
         self.element = element
     
     def set_text(self, text):
-        """Define um valor de texto no campo com formato controlado."""
+        """Sets the text of the CTextField."""
         self.element.Text = text
     
     def get_text(self):
-        """Obtém o valor de texto do campo com formato controlado."""
+        """Returns the text of the CTextField."""
         return self.element.Text
 
 class GuiTab:
@@ -264,7 +276,7 @@ class GuiTab:
         self.element = element
     
     def select(self):
-        """Seleciona a aba."""
+        """Selects the tab."""
         self.element.Select()
 
 class GuiGridView:
@@ -272,15 +284,15 @@ class GuiGridView:
         self.element = element
     
     def select_row(self, row):
-        """Seleciona uma linha específica na GridView."""
+        """Selects a row in the grid view."""
         self.element.Rows.SelectedRow = row
     
     def get_cell_value(self, row, column):
-        """Obtém o valor de uma célula específica."""
+        """Returns the value of a specific cell."""
         return self.element.GetCellValue(row, column)
     
     def set_cell_value(self, row, column, value):
-        """Define o valor de uma célula específica."""
+        """Defines the value of a specific cell."""
         self.element.SetCellValue(row, column, value)
 
 class GuiShell:
@@ -319,15 +331,15 @@ class GuiTree:
         self.element = element
     
     def expand_node(self):
-        """Expande um nó na árvore."""
+        """Expands a node in the tree."""
         self.element.Expand()
     
     def collapse_node(self):
-        """Colapsa um nó na árvore."""
+        """Collapses a node in the tree."""
         self.element.Collapse()
     
     def select_node(self, node_key):
-        """Seleciona um nó específico na árvore."""
+        """Selects a node in the tree."""
         self.element.SelectNode(node_key)
 
 class GuiStatusbar:
@@ -335,7 +347,7 @@ class GuiStatusbar:
         self.element = element
     
     def get_text(self):
-        """Obtém o texto da barra de status."""
+        """Returns the text of the status bar."""
         return self.element.Text
 
 class GuiFrameWindow:
@@ -343,19 +355,19 @@ class GuiFrameWindow:
         self.element = element
     
     def maximize(self):
-        """Maximiza a janela."""
+        """Maximizes the window."""
         self.element.Maximize()
     
     def minimize(self):
-        """Minimiza a janela."""
+        """Minimizes the window."""
         self.element.Iconify()
     
     def restore(self):
-        """Restaura a janela ao seu tamanho original."""
+        """Restore the original window size."""
         self.element.Restore()
 
     def close_session(self):
-        """Fecha a sessão atual."""
+        """Ends the current session."""
         self.session.EndSession()
 
 class GuiSession:
@@ -363,19 +375,19 @@ class GuiSession:
         self.element = element
     
     def send_vkey(self, vkey):
-        """Envia uma tecla de função para a sessão atual."""
+        """Sends a virtual key to the session."""
         self.element.SendVKey(vkey)
     
     def end_session(self):
-        """Fecha a sessão atual."""
+        """Ends the current session."""
         self.element.EndSession()
     
     def start_transaction(self, transaction):
-        """Inicia uma transação."""
+        """Starts a new transaction."""
         self.element.StartTransaction(transaction)
     
     def close_transaction(self):
-        """Fecha a transação atual."""
+        """Ends the current transaction."""
         self.element.EndTransaction()
 
 class GuiSessionInfo:
@@ -383,23 +395,23 @@ class GuiSessionInfo:
         self.element = element
     
     def get_user(self):
-        """Obtém o usuário logado na sessão."""
+        """Returns the user of the session."""
         return self.element.Info.User
     
     def get_client(self):
-        """Obtém o cliente da sessão."""
+        """Returns the client of the session."""
         return self.element.Info.Client
     
     def get_transaction(self):
-        """Obtém a transação atual da sessão."""
+        """Returns the transaction of the session."""
         return self.element.Info.Transaction
     
     def get_program(self):
-        """Obtém o programa atual da sessão."""
+        """Returns the program of the session."""
         return self.element.Info.Program
     
     def get_system(self):
-        """Obtém o sistema da sessão."""
+        """Returns the system of the session."""
         return self.element.Info.System
     
 class GuiApplication:
@@ -408,14 +420,14 @@ class GuiApplication:
     
     @property
     def name(self):
-        """Obtém o nome da aplicação."""
+        """Returns the name of the application."""
         return self.element.Name
     
     @property
     def version(self):
-        """Obtém a versão da aplicação."""
+        """Returns the version of the application."""
         return self.element.Version
     
     def open_connection(self, connection_string):
-        """Abre uma conexão com a string fornecida."""
+        """Returns the name of the application."""
         return self.element.OpenConnection(connection_string)
