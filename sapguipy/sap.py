@@ -11,7 +11,7 @@ import pygetwindow as gw
 from time import sleep
 import win32com.client
 import psutil
-from models.exceptions import ElementNotFound
+from sapguipy.models.exceptions import ElementNotFound
 
 class SapGui:
     def __init__(self, sid: str, user: str, pwd: str, mandante: str, root_sap_dir: str='C:\Program Files (x86)\SAP\FrontEnd\SAPGUI'):
@@ -73,21 +73,21 @@ class SapGui:
                     sleep(3)
 
             # Get the SAP Application object
-            self.application = self.SapGuiAuto.GetScriptingEngine()
+            self.application = self.SapGuiAuto.GetScriptingEngine
             if not self.application:
                 raise Exception("Failed to get SAP Application object.")
 
             sleep(2)
             self.connection = self.application.Children(0)
             self.session = self.connection.Children(0)
-            self.session_info = GuiSessionInfo(self.session.Info)
-            self.statusbar = GuiStatusbar(self.find_by_id("wnd[0]/sbar"))
+            self.session_info = GuiSessionInfo(self.session.info)
+            self.statusbar = self.find_by_id("wnd[0]/sbar")
 
             # Se aparecer a janela de x tentativas com a senha incorreta
-            if self.find_by_id("wnd[1]/usr/txtMESSTXT1"):
-                self.press_button("wnd[1]/tbar[0]/btn[0]")
+            if self.find_by_id("wnd[1]/usr/txtMESSTXT1", False):
+                self.find_by_id("wnd[1]/tbar[0]/btn[0]").press()
 
-            if self.get_user_logged() is None:
+            if self.session_info.get_user() is None:
                 if self.statusbar.get_text() == 'O nome ou a senha não está correto (repetir o logon)':
                     raise ValueError('Failed to login with the provided credentials.')
                 
@@ -121,6 +121,31 @@ class SapGui:
         user = self.session_info.get_user()
         return None if user == '' else user
     
+    def new_window(self):
+        if self.connection.Sessions.Count < 3:
+            self.session.CreateSession()
+            sleep(2)
+            new_session = self.connection.Children(self.connection.Sessions.Count-1)
+            return SapGui(
+                        sid=self.sid,
+                        user=self.user,
+                        pwd=self.__pwd,
+                        mandante=self.mandante,
+                        root_sap_dir=str(self.root_sap_dir)
+                            )._initialize_new_session(new_session)
+        else:
+            raise Exception('Maximum number of windows reached.')
+        
+    def _initialize_new_session(self, session):
+        """
+        Initializes a new session within the SAP application and returns a new SapGui object.
+        """
+        self.session = session
+        self.session_info = GuiSessionInfo(self.session.info)
+        self.statusbar = self.find_by_id("wnd[0]/sbar")
+        self.logged = True
+        return self
+    
     def login(self):
         """
         Logins into the SAP application using the provided credentials.
@@ -130,7 +155,7 @@ class SapGui:
         self.find_by_id("wnd[0]/usr/pwdRSYST-BCODE").set_text(self.__pwd)
         self.find_by_id("wnd[0]").sendVKey(0)
 
-        if self.session.Info.User == '':
+        if self.get_user_logged() is None:
             if self.find_by_id("wnd[0]/sbar/pane[0]").text == 'O nome ou a senha não está correto (repetir o logon)':
                 raise ValueError('Failed to login with the provided credentials.')
             
@@ -159,6 +184,7 @@ class SapGui:
         self.logged = False
 
     def open_transaction(self,transacao: str):
+        sleep(1)
         self.session.startTransaction(transacao)
     
     def get_window_size(self):
@@ -191,34 +217,52 @@ class SapGui:
         """
         Returns a instance of the GuiElement class supplied with the specified ID.
         """
-        element = self.session.FindById(element_id)
+        element = self.session.FindById(element_id, False)
 
         if element is None and raise_error:
             raise ElementNotFound(f"The element with ID '{element_id}' was not found.")
+        elif element is None and not raise_error:
+            return None
         
         element_type = element.Type
         
-        match element_type.lower():
-            case "guibutton":
+        match element_type:
+            case "GuiButton":
                 return GuiButton(element)
-            case "guitextfield":
+            case "GuiTextField":
                 return GuiTextField(element)
-            case "guicombo":
+            case "GuiComboBox":
                 return GuiComboBox(element)
-            case "guicheckbox":
+            case "GuiCheckBox":
                 return GuiCheckBox(element)
-            case "guictextfield":
+            case "GuiCTextField":
                 return GuiCTextField(element)
-            case "guitab":
+            case "GuiTab":
                 return GuiTab(element)
-            case "guigridview":
+            case "GuiGridView":
                 return GuiGridView(element)
-            case "guishell":
+            case "GuiShell":
                 return GuiShell(element)
-            case "guitree":
+            case "GuiTree":
                 return GuiTree(element)
-            case "guiframewindow":
+            case "GuiStatusbar":
+                return GuiStatusbar(element)
+            case "GuiFrameWindow":
                 return GuiFrameWindow(element)
+            case "GuiSessionInfo":
+                return GuiSessionInfo(element)
+            case "GuiLabel":
+                return GuiLabel(element)
+            case "GuiToolbar":
+                return GuiToolbar(element)
+            case "GuiTableControl":
+                return GuiTableControl(element)
+            case "GuiTitlebar":
+                return GuiTitlebar(element)
+            case "GuiContainer":
+                return GuiContainer(element)
+            case "GuiSplitter":
+                return GuiSplitter(element)
             case _:
                 raise TypeError(f"Element type '{element_type}' is not supported.")
                 
@@ -269,7 +313,7 @@ class GuiCTextField:
     
     def get_text(self):
         """Returns the text of the CTextField."""
-        return self.element.Text
+        return self.element.Text if self.element.Text != '' else None
 
 class GuiTab:
     def __init__(self, element):
@@ -305,7 +349,7 @@ class GuiShell:
     
     @property
     def columns_order(self):
-        return self.element.ColumnOrder
+        return [item for item in self.element.ColumnOrder]
     
     def send_command(self, command):
         """Sends a command to the shell."""
@@ -348,7 +392,7 @@ class GuiStatusbar:
     
     def get_text(self):
         """Returns the text of the status bar."""
-        return self.element.Text
+        return self.element.Text if self.element.Text != '' else None
 
 class GuiFrameWindow:
     def __init__(self, element):
@@ -370,9 +414,13 @@ class GuiFrameWindow:
         """Ends the current session."""
         self.session.EndSession()
 
-class GuiSession:
+class GuiSession(SapGui):
     def __init__(self, element):
         self.element = element
+
+    @property
+    def info(self):
+        return GuiSessionInfo(self.element)
     
     def send_vkey(self, vkey):
         """Sends a virtual key to the session."""
@@ -396,23 +444,23 @@ class GuiSessionInfo:
     
     def get_user(self):
         """Returns the user of the session."""
-        return self.element.Info.User
+        return self.element.User
     
     def get_client(self):
         """Returns the client of the session."""
-        return self.element.Info.Client
+        return self.element.Client
     
     def get_transaction(self):
         """Returns the transaction of the session."""
-        return self.element.Info.Transaction
+        return self.element.Transaction
     
     def get_program(self):
         """Returns the program of the session."""
-        return self.element.Info.Program
+        return self.element.Program
     
     def get_system(self):
         """Returns the system of the session."""
-        return self.element.Info.System
+        return self.element.System
     
 class GuiApplication:
     def __init__(self, element):
@@ -431,3 +479,64 @@ class GuiApplication:
     def open_connection(self, connection_string):
         """Returns the name of the application."""
         return self.element.OpenConnection(connection_string)
+    
+class GuiLabel:
+    def __init__(self, element):
+        self.element = element
+    @property
+    def text(self):
+        """Gets the text of the label."""
+        return self.element.Text
+    
+    def get_text(self):
+        """Returns the text of the label."""
+        return self.element.Text if self.element.Text != '' else None
+    
+    def set_text(self, text):
+        """Sets the text of the label."""
+        self.element.Text = text
+
+class GuiToolbar:
+    def __init__(self, element):
+        self.element = element
+    
+    def press_button(self, button_id):
+        """Pressiona um botão na barra de ferramentas."""
+        self.element.PressButton(button_id)
+
+class GuiTableControl:
+    def __init__(self, element):
+        self.element = element
+    
+    def set_cell_value(self, row, column, value):
+        """Define o valor de uma célula específica no controle de tabela."""
+        self.element.SetCellValue(row, column, value)
+    
+    def get_cell_value(self, row, column):
+        """Obtém o valor de uma célula específica no controle de tabela."""
+        return self.element.GetCellValue(row, column)
+
+class GuiTitlebar:
+    def __init__(self, element):
+        self.element = element
+    
+    @property
+    def text(self):
+        """Obtém o texto da barra de título."""
+        return self.element.Text
+
+class GuiContainer:
+    def __init__(self, element):
+        self.element = element
+    
+    def find_by_name(self, name):
+        """Encontra um elemento dentro do container pelo nome."""
+        return self.element.FindByName(name)
+
+class GuiSplitter:
+    def __init__(self, element):
+        self.element = element
+    
+    def set_position(self, position):
+        """Define a posição do divisor (splitter)."""
+        self.element.SetPosition(position)
