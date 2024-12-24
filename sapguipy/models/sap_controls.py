@@ -1,5 +1,4 @@
 from pandas import DataFrame
-
 class GuiVComponent:
     def __init__(self, element):
         self.element = element
@@ -13,10 +12,15 @@ class GuiVComponent:
         return self.element.Name
     @property
     def changeable(self):
+        if not hasattr(self.element, 'changeable'):
+            return False
         return self.element.Changeable
+        
     
     @property
     def default_tooltip(self):
+        if not hasattr(self.element, 'defaulttooltip'):
+            return None
         return self.element.DefaultTooltip if self.element.DefaultTooltip != '' else None
     
     @property
@@ -25,7 +29,9 @@ class GuiVComponent:
     
     @property
     def icon_name(self):
-        return self.element.IconName
+        if not hasattr(self.element, 'iconname'):
+            return None
+        return self.element.IconName if self.element.IconName != '' else None
     
     @property
     def left(self):
@@ -33,6 +39,8 @@ class GuiVComponent:
     
     @property
     def modified(self):
+        if not hasattr(self.element, 'modified'):
+            return None
         return self.element.Modified if self.element.ContainerType else None
     
     @property
@@ -49,16 +57,31 @@ class GuiVComponent:
     
     @property
     def tooltip(self):
+        if not hasattr(self.element, 'tooltip'):
+            return None
         return self.element.Tooltip if self.element.Tooltip != '' else None
-    
-    @property
-    def icon_name(self):
-        return self.element.IconName if self.element.IconName != '' else None
     
     @property
     def top(self):
         return self.element.Top
-
+    
+    @property
+    def width(self):
+        return self.element.Width
+    
+    @property
+    def key(self):
+        if not hasattr(self.element, 'key'):
+            return None
+        return self.element.Key
+        
+    @property
+    def has_children(self):
+        if hasattr(self.element, 'children'):
+            return True
+        else:
+            return False
+        
 class GuiButton(GuiVComponent):
     def __init__(self, element):
         self.element = element
@@ -338,15 +361,17 @@ class GuiSplitter(GuiVComponent):
         return self.element
 
 class GuiUserArea(GuiVComponent):
-    def __init__(self, element):
+    def __init__(self, class_instance, element):
+        self.__class = class_instance
         self.element = element
     
     def list_children(self):
         """List all children of the user area."""
-        return [item for item in self.element.Children]
+        return [self.__class.find_by_id(item) for item in self.element.Children]
     
 class GuiMainWindow(GuiVComponent):
-    def __init__(self, element):
+    def __init__(self, class_instance, element):
+        self.__class = class_instance
         self.element = element
     
     @property
@@ -380,3 +405,28 @@ class GuiMainWindow(GuiVComponent):
     
     def close(self):
         self.element.Close()
+
+    def list_children(self):
+        """List all children."""
+        return [self.__class.find_by_id(item) for item in self.element.Children]
+
+class GuiComponentCollection(GuiVComponent):
+    def __init__(self, element):
+        self.element = element
+    
+    @property
+    def count(self):
+        return self.element.Count
+    
+    @property
+    def Length(self):
+        return self.element.Length
+    
+class GuiMenubar(GuiVComponent):
+    def __init__(self, class_instance, element):
+        self.__class = class_instance
+        self.element = element
+    
+    def list_children(self):
+        """List all children."""
+        return [self.__class.find_by_id(item) for item in self.element.Children]

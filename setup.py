@@ -12,7 +12,7 @@ requirements_list = [requirement.strip() for requirement in requirement]
 
 setup(
     name="sapguipy",
-    version="0.0.6",
+    version="0.0.7",
     author="Nicolas Passos",
     license="MIT License",
     description="Manipulate SAP GUI with some lines of code",

@@ -10,6 +10,7 @@ import pygetwindow as gw
 from time import sleep
 import win32com.client
 import psutil
+import os
 from sapguipy.models.exceptions import ElementNotFound
 from sapguipy.models.sap_controls import *
 
@@ -138,7 +139,7 @@ class SapGui:
                         pwd=self.__pwd,
                         mandante=self.mandante,
                         root_sap_dir=str(self.root_sap_dir)
-                            )._initialize_new_session(new_session)
+                        )._initialize_new_session(new_session)
         else:
             raise Exception('Maximum number of windows reached.')
         
@@ -183,8 +184,8 @@ class SapGui:
         """
         self.program.terminate()
 
-        for proc in psutil.process_iter(['pid', 'name']):
-            if 'saplogon' in proc.info['name'].lower():
+        for proc in psutil.process_iter(['pid', 'name', 'username']):
+            if 'saplogon' in proc.info['name'].lower() and proc.info['username'] == f"{os.getenv('USERDOMAIN')}\{os.getenv('USERNAME')}":
                 proc.kill()
 
         self.logged = False
@@ -214,16 +215,19 @@ class SapGui:
         else:
             return
         
-    def find_by_id(self, element_id: str, raise_error: bool = True):
+    def find_by_id(self, element_id: str|win32com.client.CDispatch, raise_error: bool = True):
         """
         Returns a instance of the GuiElement class supplied with the specified ID.
         """
-        element = self.session.FindById(element_id, False)
+        if isinstance(element_id, str):
+            element = self.session.FindById(element_id, False)
 
-        if element is None and raise_error:
-            raise ElementNotFound(f"The element with ID '{element_id}' was not found.")
-        elif element is None and not raise_error:
-            return None
+            if element is None and raise_error:
+                raise ElementNotFound(f"The element with ID '{element_id}' was not found.")
+            elif element is None and not raise_error:
+                return None
+        else:
+            element = element_id
         
         element_type = element.Type
         
@@ -265,8 +269,12 @@ class SapGui:
             case "GuiSplitter":
                 return GuiSplitter(element)
             case "GuiUserArea":
-                return GuiUserArea(element)
+                return GuiUserArea(self,element)
             case "GuiMainWindow":
-                return GuiMainWindow(element)
+                return GuiMainWindow(self,element)
+            case "GuiComponentCollection":
+                return GuiComponentCollection(element)
+            case "GuiMenubar":
+                return GuiMenubar(self,element)
             case _:
                 raise TypeError(f"Element type '{element_type}' is not supported.")
