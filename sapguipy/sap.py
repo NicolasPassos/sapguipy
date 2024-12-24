@@ -276,5 +276,9 @@ class SapGui:
                 return GuiComponentCollection(element)
             case "GuiMenubar":
                 return GuiMenubar(self,element)
+            case "GuiCustomControl":
+                return GuiCustomControl(self,element)
+            case "GuiContainerShell":
+                return GuiContainerShell(self,element)
             case _:
                 raise TypeError(f"Element type '{element_type}' is not supported.")

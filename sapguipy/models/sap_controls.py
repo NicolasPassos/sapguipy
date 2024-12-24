@@ -164,6 +164,8 @@ class GuiShell(GuiVComponent):
 
     @property
     def rows_count(self):
+        if not hasattr(self.element, 'rowcount'):
+            return None
         return self.element.RowCount
     
     @property
@@ -426,6 +428,26 @@ class GuiMenubar(GuiVComponent):
     def __init__(self, class_instance, element):
         self.__class = class_instance
         self.element = element
+    
+    def list_children(self):
+        """List all children."""
+        return [self.__class.find_by_id(item) for item in self.element.Children]
+    
+class GuiCustomControl(GuiVComponent):
+    def __init__(self, class_instance, element):
+        self.__class = class_instance
+        self.element = element
+
+    def list_children(self):
+        """List all children."""
+        return [self.__class.find_by_id(item) for item in self.element.Children]
+    
+class GuiContainerShell(GuiVComponent):
+    def __init__(self, class_instance, element):
+        self.__class = class_instance
+        self.element = element
+
+    
     
     def list_children(self):
         """List all children."""
