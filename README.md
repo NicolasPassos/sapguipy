@@ -69,7 +69,7 @@ Before contributing, please ensure you have the following:
 1. **Fork the Repository**: Start by forking the repository to your GitHub account.
 2. **Clone the Repository**: Clone your fork to your local machine.
    ```bash
-   git clone https://github.com/NicolasPassos/sappy
+   git clone https://github.com/NicolasPassos/sapguipy
    cd repository-name
    ```
 3. **Install Dependencies**: Install the required dependencies.
